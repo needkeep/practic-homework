@@ -1,0 +1,114 @@
+---
+- name: Установка Docker на Ubuntu и CentOS 8
+  hosts: app
+  gather_facts: yes
+  become: yes 
+
+  tasks:
+  
+# Смотрим какие есть дистрибутивы  
+  - name: Показать установленные дистрибутивы
+    debug:
+      var: ansible_facts.distribution      
+
+# Для Ubuntu установка Docker
+  - name: Установка apt-transport-https на Ubuntu
+    apt:
+      name: apt-transport-https
+      state: present
+    when:
+       ansible_facts.distribution == "Ubuntu"
+  
+  - name: Установка ca-certificates на Ubuntu
+    apt:
+      name: ca-certificates
+      state: present
+    when:
+       ansible_facts.distribution == "Ubuntu"
+
+  - name: Установка curl на Ubuntu
+    apt:
+      name: curl
+      state: present
+    when:
+      ansible_facts.distribution == "Ubuntu"
+
+  - name: Установка software-properties-common на Ubuntu
+    apt:
+      name: software-properties-common
+      state: present
+    when:
+       ansible_facts.distribution == "Ubuntu"
+
+  - name: Добавление GPG ключа докера на Ubuntu
+    shell:
+      cmd: curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+    when:
+       ansible_facts.distribution == "Ubuntu"
+
+  - name: Добавление репозитория на Ubuntu
+    apt_repository:
+      repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable
+      state: present
+    when:
+       ansible_facts.distribution == "Ubuntu"
+
+  - name: Обновление репозиториев на Ubuntu
+    apt:
+      update_cache: yes
+    become: yes
+    when:
+       ansible_facts.distribution == "Ubuntu"
+
+  - name: Установка докера на Ubuntu
+    apt:
+      name: docker-ce
+      state: present
+    when:
+      ansible_facts.distribution == "Ubuntu"    
+
+# Для CentOS 8 Установка Docker 
+  - name: Установка containet.io на CentOS
+    dnf:
+      name: 'http://download.docker.com/linux/centos/7/x86_64/stable/Packages/containerd.io-1.2.10-3.2.el7.x86_64.rpm'
+      state: installed
+      disable_gpg_check: true
+    when:
+       ansible_facts.distribution == "CentOS"
+
+  - name: Добавление репозитория docker на CentOS
+    command: dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
+    when:
+       ansible_facts.distribution == "CentOS"
+
+  - name: Установка docker на CentOS
+    dnf:
+      name: docker-ce
+      state: installed
+    when:
+      ansible_facts.distribution == "CentOS"
+
+# Для всех версий ОС  
+  - name: Запуск сервиса и добавление в автозагрузку
+    service:
+      name: docker
+      state: started
+      enabled: yes
+
+# Установка postgressql для машин группы database
+- name: Установка postgreSQL на Ubuntu
+  hosts: database
+  gather_facts: yes
+  become: yes
+
+  tasks:
+
+  - name: Устанавливаем PostgreSQL
+    apt:
+      name: postgresql
+      state: present
+
+  - name: Запуск службы PostgreSQL
+    service:
+      name: postgresql
+      state: started  
